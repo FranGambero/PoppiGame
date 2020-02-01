@@ -17,6 +17,7 @@ public class GameController : MonoBehaviour
     float timerTime;
     public int level;
     public int maxLevels;
+    public Image HeatBar;
     private void Awake() {
         objects = new List<ObjectController>();
         objects.AddRange(FindObjectsOfType<ObjectController>());
@@ -27,7 +28,7 @@ public class GameController : MonoBehaviour
         if(objects.FindAll(o => o.placed == true).Count == objects.Count) {
             playerController.OnLevelEnded();
             TimeStop();
-            Invoke(nameof(DoFadeout),playerController.outAnimationTime);
+            Invoke(nameof(DoFadeout), playerController.outAnimationTime);
             Invoke(nameof(NextLevel), playerController.outAnimationTime + fadeoutTime);
         }
     }
@@ -52,7 +53,7 @@ public class GameController : MonoBehaviour
         Timer();
     }
     private void LateUpdate() {
-        
+        //HeatBar.fillAmount(playerController.GetFuelPercentage());
     }
     public void Timer() {
         if (counting) {
@@ -69,4 +70,5 @@ public class GameController : MonoBehaviour
             SceneManager.LoadScene(this.level++);
         }
     }
+
 }

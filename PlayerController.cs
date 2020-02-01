@@ -1,25 +1,25 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour {
 
     public float moveSpeed;
-    public float maxHeat;
-    public float coolingSpeed;
+    public float rotateSpeed;
+    public float maxEnergy;
+    public float rechargeSpeed;
     public float jetForce;
     public ParticleSystem jetFireParticle;
-    public float heat;
-    public float outAnimationTime;
 
-    private bool canFly = false;
-    private bool overheated = false;
+    public float energy;
+    public bool onSpace = false;
+    public bool canFly = false;
+    private bool noEnergy = false;
     private bool onGround = false;
-    private bool canMove = true;
+    public bool canMove = true;
     private bool flying = false;
 
-    public Collider2D[] objsTotal;
+    public float outAnimationTime;
 
     private Rigidbody2D _rb;
 
@@ -28,19 +28,13 @@ public class PlayerController : MonoBehaviour {
         _rb = GetComponent<Rigidbody2D>();
         if (jetFireParticle)
             jetFireParticle.Stop();
-        heat = 0;
+        energy = maxEnergy;
     }
 
     private void Update() {
+        checkSpace();
         jetParticleController();
         checkFly();
-
-        this.Boom();
-        if (this.objsTotal.Length >= 2) {
-            Debug.Log("Obks> " + this.objsTotal[1]);
-
-        }
-
     }
 
     private void FixedUpdate() {
@@ -50,80 +44,77 @@ public class PlayerController : MonoBehaviour {
             Fly();
     }
 
-    internal void OnLevelEnded() {
-        canMove = false;
-        canFly = false;
-    }
-    internal void OnLevelStart() {
-        canMove = true;
-        canFly = true;
-    }
-
     private void Movement() {
         float xAxis = 0;
         xAxis = Input.GetAxis("Horizontal");
-        Vector2 movement = new Vector2(xAxis, 0);
-        transform.Translate(movement * moveSpeed * Time.deltaTime);
+        if (!onSpace) {
+            //en tierra se mueve con axisX
+            Vector2 movement = new Vector2(xAxis, 0);
+            transform.Translate(movement * moveSpeed * Time.deltaTime);
+        } else {
+            //en el espacio rota segun axisX
+            Vector3 rotation = new Vector3(0, 0, xAxis);
+            transform.Rotate(rotation * rotateSpeed * Time.deltaTime);
+        }
     }
 
     private void checkFly() {
-        if (heat >= maxHeat) {
-            canFly = false;
-            overheated = true;
-        }
-        if (overheated && heat > 0 && onGround) {
-            reduceHeat(coolingSpeed);
-        } else if (overheated && heat <= 0) {
-            heat = 0;
-            overheated = false;
-        }
+        //if noEnergy --> cant fly
+        //if onGround --> increaseEnergy
 
-        if (!overheated && onGround) {
+        if (energy <= 0) {
+            noEnergy = true;
+            canFly = false;
+        }
+        if (!onSpace && onGround)
+            increaseEnergy(rechargeSpeed);
+        if (noEnergy && energy >= maxEnergy)
+            noEnergy = false;
+        if (!noEnergy && onGround) {
             canFly = true;
         }
     }
 
-    private void increaseHeat(float value) {
-        heat += value * Time.deltaTime;
+    private void checkSpace() {
+        if (onSpace) {
+            _rb.freezeRotation = false;
+            _rb.gravityScale = 0;
+        } else {
+            _rb.freezeRotation = true;
+            _rb.gravityScale = 1;
+        }
     }
 
-    private void reduceHeat(float value) {
-        heat -= value * Time.deltaTime;
+    private void increaseEnergy(float value) {
+        if (energy < maxEnergy)
+            energy += value * Time.deltaTime;
+        else if (energy > maxEnergy)
+            energy = maxEnergy;
+    }
+
+    private void reduceEnergy(float value) {
+        if (energy > 0)
+            energy -= value * Time.deltaTime;
+        else if (energy < 0)
+            energy = 0;
     }
 
     private void Fly() {
-        flying = Input.GetKey(KeyCode.Space);
+        flying = Input.GetMouseButton(0);
         if (flying) {
-            _rb.AddForce(Vector2.up * jetForce);
-            increaseHeat(10f);
+            if (!onSpace)
+                _rb.AddForce(Vector2.up * jetForce);
+            else
+                _rb.AddForce(transform.rotation * Vector2.up * jetForce);
+            reduceEnergy(10f);
         }
+        if (onSpace && !flying)
+            increaseEnergy(rechargeSpeed);
     }
 
     private void OnCollisionEnter2D(Collision2D collision) {
         if (collision.gameObject.tag == "Ground") {
             onGround = true;
-        }
-
-        if (this.objsTotal.Length > 1) {
-            if (collision.gameObject.tag == "Caja") {
-                //Debug.Log("Entras collision a " + collision.gameObject.name);
-                //ObjectController result = objsTotal.Find(x => x.GetId() == "xy");
-                List<Collider2D> listAux = new List<Collider2D>();
-                listAux.AddRange(objsTotal);
-                GameObject cubo = listAux.Find(o => o.GetComponent<ObjectController>() != null).gameObject;
-                //GameObject cubo = this.objsTotal[0].gameObject;
-                cubo.GetComponent<ObjectController>().isPicked = true;
-                //collision.gameObject.GetComponent<ObjectController>().isPicked = true;
-
-                //this.isGrabbing() = true;
-            }
-
-            if (collision.gameObject.tag == "Zona") {
-                Debug.Log("ESTOY EN ZONA");
-                collision.gameObject.GetComponent<ObjectController>().inZone = true;
-
-                //this.isGrabbing() = false;
-            }
         }
     }
 
@@ -133,25 +124,24 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
-    public void Boom() {
-        Collider2D[] objs = Physics2D.OverlapCircleAll(transform.position, .75f);
-        this.objsTotal = objs;
-    }
-
-    private void OnDrawGizmos() {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(this.transform.position, .75f);
-    }
-
     private void jetParticleController() {
-        if (Input.GetKey(KeyCode.Space) && !overheated && !jetFireParticle.isPlaying) {
+        if (Input.GetMouseButton(0) && !noEnergy && !jetFireParticle.isPlaying) {
             if (jetFireParticle) {
                 jetFireParticle.Play();
             }
-        } else if (Input.GetKeyUp(KeyCode.Space) || overheated) {
+        } else if (Input.GetMouseButtonUp(0) || noEnergy) {
             if (jetFireParticle) {
                 jetFireParticle.Stop();
             }
         }
+    }
+
+    internal void OnLevelEnded() {
+        canMove = false;
+        canFly = false;
+    }
+    internal void OnLevelStart() {
+        canMove = true;
+        canFly = true;
     }
 }
