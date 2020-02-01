@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-
+using TMPro;
 public class GameController : MonoBehaviour
 {
     List<ObjectController> objects;
@@ -12,23 +12,32 @@ public class GameController : MonoBehaviour
     public int currentLevel;
     public GameObject fadePanel;
     public float fadeoutTime = 0.25f;
-    bool counting = false;
-    float tmpTime;
-    float timerTime;
+    bool counting = true;
+    public float tmpTime;
+    public float timerTime;
     public int level;
     public int maxLevels;
-    public Image HeatBar;
+    public Image heatBar;
+    public Image timeBar;
+    public float maxTime = 60;
+    public TextMeshProUGUI timeText;
+
     private void Awake() {
         objects = new List<ObjectController>();
         objects.AddRange(FindObjectsOfType<ObjectController>());
         playerController = FindObjectOfType<PlayerController>();
+        AddTime(maxTime);
+    }
+
+    private void AddTime(float extratime) {
+        timerTime += extratime;
     }
 
     public void ObjectPlaced() {
         if(objects.FindAll(o => o.placed == true).Count == objects.Count) {
             playerController.OnLevelEnded();
-            TimeStop();
-            Invoke(nameof(DoFadeout), playerController.outAnimationTime);
+          //  TimeStop();
+            Invoke(nameof(DoFadeout),playerController.outAnimationTime);
             Invoke(nameof(NextLevel), playerController.outAnimationTime + fadeoutTime);
         }
     }
@@ -53,12 +62,14 @@ public class GameController : MonoBehaviour
         Timer();
     }
     private void LateUpdate() {
-        //HeatBar.fillAmount(playerController.GetFuelPercentage());
+        // HeatBar.fillAmount(playerController.GetFuelPercentage());
+        timeBar.fillAmount = GetTimePercent();
+        timeText.text = timerTime.ToString();
     }
     public void Timer() {
         if (counting) {
-            if (tmpTime==1) {
-                timerTime++;
+            if (tmpTime>=1) {
+                timerTime--;
                 tmpTime = 0;
             }
             tmpTime += Time.fixedDeltaTime;
@@ -70,5 +81,8 @@ public class GameController : MonoBehaviour
             SceneManager.LoadScene(this.level++);
         }
     }
+    public float GetTimePercent() {
+        return timerTime /  maxTime ;
 
+    }
 }

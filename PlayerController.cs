@@ -1,17 +1,20 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour {
 
     public float moveSpeed;
     public float rotateSpeed;
-    public float maxEnergy;
     public float rechargeSpeed;
     public float jetForce;
     public ParticleSystem jetFireParticle;
+    public float maxEnergy;
+    private float energy;
 
-    public float energy;
+    public Image heatImage;
+
     public bool onSpace = false;
     public bool canFly = false;
     private bool noEnergy = false;
@@ -35,6 +38,8 @@ public class PlayerController : MonoBehaviour {
         checkSpace();
         jetParticleController();
         checkFly();
+
+        heatImage.fillAmount = energy / maxEnergy;
     }
 
     private void FixedUpdate() {

@@ -11,6 +11,8 @@ public class GrabController : MonoBehaviour {
     private Collider2D[] arounds;
     private GameObject grabbedObject;
 
+    private GameController gameControllerScript;
+
     private void OnDrawGizmos() {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(this.transform.position, detectionRadius);
@@ -69,8 +71,11 @@ public class GrabController : MonoBehaviour {
 
 
     private void OnTriggerEnter2D(Collider2D collision) {
-        if (collision.gameObject.tag == "Zone" && hasObject) {
-            inPlace = true;
+        if (hasObject) {
+            Debug.Log("Una cosa" + collision.gameObject + " y lo otro " + grabbedObject.GetComponent<ObjectController>().originalTransform);
+            if (collision.gameObject.tag == "Zone" && hasObject && collision.gameObject == grabbedObject.GetComponent<ObjectController>().originalTransform) {
+                inPlace = true;
+            }
         }
     }
 
@@ -83,6 +88,7 @@ public class GrabController : MonoBehaviour {
         grabbedObject.transform.parent = null;
 
         grabbedObject.GetComponent<ObjectController>().placed = true;
+        this.gameControllerScript.ObjectPlaced();
         this.hasObject = false;
 
     }

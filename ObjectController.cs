@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ObjectController : MonoBehaviour {
     private Quaternion originalRotation;
-    public Transform originalTransform;
+    public GameObject originalTransform;
     public bool placed = false;
     private Rigidbody2D myRb;
 
@@ -19,7 +19,7 @@ public class ObjectController : MonoBehaviour {
     }
 
     public Transform getOriginalTransform() {
-        return originalTransform;
+        return originalTransform.transform;
     }
 
     public void letsPlay() {
