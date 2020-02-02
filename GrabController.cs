@@ -11,8 +11,12 @@ public class GrabController : MonoBehaviour {
     private Collider2D[] arounds;
     private GameObject grabbedObject;
 
+    private AudioManager audioManagerScript; 
     private GameController gameControllerScript;
-
+    private void Awake() {
+        gameControllerScript = FindObjectOfType<GameController>();
+        audioManagerScript = FindObjectOfType<AudioManager>();
+    }
     private void OnDrawGizmos() {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(this.transform.position, detectionRadius);
@@ -20,11 +24,11 @@ public class GrabController : MonoBehaviour {
 
     private void Update() {
         CheckAround();
-        if (Input.GetMouseButtonDown(1) && !hasObject)
+        if (Input.GetMouseButtonDown(0) && !hasObject)
             Grab();
-        if (Input.GetMouseButtonUp(1) && hasObject && inPlace)
+        if (Input.GetMouseButtonUp(0) && hasObject && inPlace)
             stickObject();
-        else if (Input.GetMouseButtonUp(1) && hasObject)
+        else if (Input.GetMouseButtonUp(0) && hasObject)
             Drop();
     }
 
@@ -45,12 +49,13 @@ public class GrabController : MonoBehaviour {
                     grabbedObject.transform.position = handObject.transform.position;
                     grabbedObject.transform.parent = handObject.transform;
                     hasObject = true;
+                    audioManagerScript.PlayCatch();
                 }
             }
         }
     }
 
-    private void Drop() {
+    public void Drop() {
         if (hasObject) {
             grabbedObject.transform.parent = null;
             returnPhysics(grabbedObject);
@@ -78,7 +83,9 @@ public class GrabController : MonoBehaviour {
             }
         }
     }
-
+    private void OnTriggerExit2D(Collider2D collision) {
+        inPlace = false;
+    }
     private void stickObject() {
         takeOutPhysics(grabbedObject);
         Quaternion originalRotation = grabbedObject.GetComponent<ObjectController>().getOriginalRotation();
